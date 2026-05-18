@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Mental Health Study — Scenario 1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #212121;
+    --sidebar-bg:  #171717;
+    --surface:     #2f2f2f;
+    --surface2:    #3f3f3f;
+    --border:      #3f3f3f;
+    --text:        #ececec;
+    --text-muted:  #8e8ea0;
+    --text-dim:    #a1a1aa;
+    --accent:      #10a37f;
+    --accent-hover:#0d8c6d;
+    --btn-bg:      #2f2f2f;
+    --btn-border:  #555;
+    --radius:      12px;
+    --font:        'Inter', system-ui, -apple-system, sans-serif;
+
+    /* full-height that works inside iframes & avoids mobile browser chrome */
+    --app-h: 100vh;
+  }
+
+  html, body {
+    height: 100%; height: var(--app-h);
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow: hidden;         /* let inner panels scroll, not the page */
+  }
+
+  /* ═══════════════════════════════════════════════════
+     LAYOUT  —  desktop: sidebar + main side by side
+                mobile:  top banner + main stacked
+     ═══════════════════════════════════════════════════ */
+  .app {
+    display: flex;
+    height: 100%;
+    height: var(--app-h);
+    overflow: hidden;
+  }
+
+  /* ── Sidebar (desktop) ── */
+  .sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    font-weight: 600; font-size: 15px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sidebar-logo svg { width: 26px; height: 26px; }
+
+  /* progress bar */
+  .sidebar-progress { padding: 12px 16px 4px; flex-shrink: 0; }
+  .sidebar-progress-label {
+    font-size: 11px; color: var(--text-muted); margin-bottom: 6px;
+    display: flex; justify-content: space-between;
+  }
+  .sidebar-progress-track {
+    height: 4px; background: var(--surface2); border-radius: 4px; overflow: hidden;
+  }
+  .sidebar-progress-fill {
+    height: 100%; background: var(--accent); border-radius: 4px; transition: width .5s ease;
+  }
+
+  /* scenario panel */
+  .scenario-panel {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; padding: 16px;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .scenario-panel.visible { opacity: 1; }
+  .scenario-panel-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scenario-panel-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .scenario-panel-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    background: rgba(16,163,127,.12); color: var(--accent);
+    border: 1px solid rgba(16,163,127,.25); border-radius: 20px;
+    padding: 4px 10px; margin-bottom: 14px; width: fit-content;
+  }
+  .scenario-panel-badge-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .scenario-panel-title {
+    font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; line-height: 1.4;
+  }
+  .scenario-panel-body {
+    font-size: 12.5px; line-height: 1.75; color: #a0a0b0;
+    background: rgba(255,255,255,.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; overflow-y: auto; flex: 1;
+  }
+  .scenario-panel-body::-webkit-scrollbar { width: 4px; }
+  .scenario-panel-body::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+  .scenario-panel-hint {
+    margin-top: 12px; font-size: 11.5px; color: var(--text-muted);
+    line-height: 1.55; display: flex; gap: 7px; align-items: flex-start;
+    padding: 10px 12px; background: rgba(255,255,255,.02);
+    border: 1px solid var(--border); border-radius: 8px; flex-shrink: 0;
+  }
+  .scenario-panel-hint-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .sidebar-footer {
+    border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);
+    padding: 10px 16px; flex-shrink: 0;
+  }
+
+  /* ── Mobile top-banner (hidden on desktop) ── */
+  .mobile-banner {
+    display: none;
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  /* banner header row */
+  .mobile-banner-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+  }
+  .mobile-banner-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 14px;
+  }
+  .mobile-banner-logo svg { width: 22px; height: 22px; }
+  .mobile-banner-toggle {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 13px; cursor: pointer; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font);
+  }
+  /* collapsible scenario text */
+  .mobile-scenario-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .35s ease, padding .35s ease;
+    padding: 0 16px;
+  }
+  .mobile-scenario-body.open {
+    max-height: 220px;
+    padding: 0 16px 14px;
+    overflow-y: auto;
+  }
+  .mobile-scenario-text {
+    font-size: 13px; line-height: 1.7; color: #a0a0b0;
+    background: rgba(255,255,255,.03); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px;
+  }
+  /* progress inside banner */
+  .mobile-progress {
+    padding: 6px 16px 10px; display: flex; align-items: center; gap: 10px;
+  }
+  .mobile-progress-track {
+    flex: 1; height: 4px; background: var(--surface2); border-radius: 4px; overflow: hidden;
+  }
+  .mobile-progress-fill {
+    height: 100%; background: var(--accent); border-radius: 4px; transition: width .5s ease;
+  }
+  .mobile-progress-pct { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+  /* ── Main column ── */
+  .main {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; min-width: 0; position: relative;
+  }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; border-bottom: 1px solid var(--border);
+    background: var(--bg); flex-shrink: 0; z-index: 1;
+  }
+  .topbar-model {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 500; font-size: 14px;
+  }
+  .topbar-model span { color: var(--text-muted); font-size: 12px; }
+  .scenario-badge {
+    font-size: 12px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px; color: var(--text-dim);
+  }
+
+  /* ── Briefing overlay ── */
+  .briefing-overlay {
+    position: absolute; inset: 0; background: var(--bg); z-index: 10;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .briefing-overlay.hiding { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+  .briefing-overlay.gone   { display: none; }
+
+  .briefing-card {
+    max-width: 600px; width: 100%;
+    background: var(--sidebar-bg); border: 1px solid var(--border);
+    border-radius: 18px; padding: 32px 36px;
+    animation: fadeUp .4s ease both;
+  }
+  .briefing-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .briefing-pill {
+    font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+    background: rgba(16,163,127,.15); color: var(--accent);
+    border: 1px solid rgba(16,163,127,.3); border-radius: 20px; padding: 4px 12px;
+  }
+  .briefing-step { font-size: 12px; color: var(--text-muted); }
+  .briefing-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; line-height: 1.35; color: var(--text); }
+  .briefing-divider { height: 1px; background: var(--border); margin: 0 -36px 22px; }
+  .briefing-body { font-size: 14px; line-height: 1.85; color: #c8c8d0; margin-bottom: 24px; }
+  .briefing-instruction {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: rgba(255,255,255,.04); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;
+  }
+  .briefing-instruction-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .begin-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #fff;
+    padding: 13px 26px; border-radius: 10px;
+    font-size: 15px; font-weight: 500; border: none; cursor: pointer;
+    font-family: var(--font); transition: background .18s, transform .1s;
+    width: 100%; justify-content: center;   /* full-width tap target on mobile */
+  }
+  .begin-btn:hover   { background: var(--accent-hover); }
+  .begin-btn:active  { transform: scale(.97); }
+  .begin-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Chat area ── */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .chat-area {
+    flex: 1; overflow-y: auto;
+    padding: 24px 0 130px;     /* extra bottom padding so last message clears input bar */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+  .chat-inner { padding: 0 16px; }
+
+  /* Messages */
+  .msg-row {
+    display: flex; padding: 0 4px;
+    max-width: 720px; margin: 0 auto 2px; width: 100%;
+    animation: fadeUp .25s ease both;
+  }
+  .msg-row.user      { justify-content: flex-end; }
+  .msg-row.assistant { justify-content: flex-start; }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 4px; margin-right: 8px;
+    font-size: 12px; font-weight: 700; background: #10a37f; color: #fff;
+  }
+  .msg-bubble {
+    max-width: 80%; padding: 11px 15px; border-radius: 18px;
+    font-size: 14px; line-height: 1.65;
+  }
+  .msg-row.user .msg-bubble {
+    background: var(--surface); border: 1px solid var(--border); border-bottom-right-radius: 4px;
+  }
+  .msg-row.assistant .msg-bubble {
+    background: transparent; padding: 10px 0; max-width: 95%; border-radius: 0;
+  }
+
+  /* Option buttons */
+  .options-row {
+    max-width: 720px; margin: 0 auto 6px;
+    display: flex; flex-wrap: wrap; gap: 10px;
+    padding: 4px 4px 10px;
+    animation: fadeUp .3s ease both;
+  }
+  .opt-btn {
+    background: var(--btn-bg); border: 1px solid var(--btn-border);
+    color: var(--text); padding: 12px 20px; border-radius: 24px;
+    font-size: 14px; font-family: var(--font); cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+    flex: 1 1 auto;          /* stretch to fill row on narrow screens */
+    min-height: 44px;        /* iOS minimum tap target */
+    text-align: center;
+  }
+  .opt-btn:hover  { background: var(--surface2); border-color: #777; }
+  .opt-btn:active { transform: scale(.97); }
+
+  /* Output cards */
+  .output-choice {
+    max-width: 720px; margin: 0 auto 10px;
+    display: flex; flex-direction: column; gap: 12px;
+    animation: fadeUp .3s ease both;
+  }
+  .output-choice-label {
+    font-size: 12px; color: var(--text-muted); text-align: center; padding: 4px 0 2px;
+  }
+  .output-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    font-size: 14px; line-height: 1.7; cursor: pointer;
+    transition: border-color .18s, background .18s;
+    min-height: 44px;
+  }
+  .output-card:hover  { border-color: var(--accent); background: var(--surface2); }
+  .output-card:active { border-color: var(--accent); }
+  .card-tag {
+    font-size: 10px; font-weight: 600; letter-spacing: .06em;
+    color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; display: block;
+  }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 5px; align-items: center; padding: 12px 0; }
+  .typing span {
+    width: 7px; height: 7px; background: var(--text-muted);
+    border-radius: 50%; animation: blink 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.2;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
+
+  /* Input bar (decorative) */
+  .input-bar-wrap {
+    flex-shrink: 0; background: var(--bg);
+    border-top: 1px solid var(--border); padding: 12px 16px;
+  }
+  .input-bar {
+    max-width: 720px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 14px;
+  }
+  .input-bar-text  { flex: 1; font-size: 14px; color: var(--text-muted); font-family: var(--font); }
+  .input-bar-icon  { color: var(--text-muted); opacity: .5; }
+
+  /* Waiting screen */
+  .waiting-screen {
+    max-width: 480px; margin: 60px auto; text-align: center;
+    animation: fadeUp .4s ease both; padding: 0 24px;
+  }
+  .waiting-screen .check-icon {
+    width: 56px; height: 56px; background: rgba(16,163,127,.12);
+    border: 1.5px solid rgba(16,163,127,.35); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+  }
+  .waiting-screen h2  { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+  .waiting-screen p   { color: var(--text-dim); font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
+  .waiting-spinner {
+    margin: 24px auto 0; width: 28px; height: 28px;
+    border: 3px solid var(--surface2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to{ transform: rotate(360deg); } }
+
+  /* ═══════════════════════════════════════════════════
+     MOBILE  —  max-width: 640px
+     Sidebar hides; mobile-banner appears at top.
+     ═══════════════════════════════════════════════════ */
+  @media (max-width: 640px) {
+    .app { flex-direction: column; }
+
+    /* hide desktop sidebar entirely */
+    .sidebar { display: none; }
+
+    /* show mobile banner */
+    .mobile-banner { display: block; }
+
+    /* hide desktop topbar model badge (redundant on mobile) */
+    .topbar { padding: 8px 14px; }
+    .topbar-model { font-size: 13px; }
+
+    /* briefing card: tighter padding */
+    .briefing-card { padding: 24px 20px; border-radius: 14px; }
+    .briefing-divider { margin: 0 -20px 18px; }
+    .briefing-title { font-size: 16px; }
+    .briefing-body  { font-size: 13.5px; margin-bottom: 18px; }
+    .briefing-instruction { padding: 10px 12px; font-size: 12.5px; margin-bottom: 18px; }
+
+    /* chat bubbles: allow wider on narrow screens */
+    .msg-bubble     { max-width: 90%; font-size: 14px; }
+    .msg-row.assistant .msg-bubble { max-width: 100%; }
+
+    /* option buttons: stack vertically on very narrow phones */
+    .options-row    { flex-direction: column; gap: 8px; }
+    .opt-btn        { width: 100%; }
+
+    /* output cards: slightly less padding */
+    .output-card    { padding: 15px 16px; }
+
+    /* input bar */
+    .input-bar-wrap { padding: 10px 14px; }
+
+    /* waiting screen */
+    .waiting-screen { margin: 40px auto; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ DESKTOP SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.65-2.967 10.079 10.079 0 0 0-9.612 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 6.65 2.967 10.079 10.079 0 0 0 9.618-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l8.048 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.647-1.13zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943 4.33-2.501 4.332 2.5v4.999l-4.331 2.5-4.331-2.5V18z" fill="currentColor"/>
+      </svg>
+      ChatGPT
+    </div>
+    <div class="sidebar-progress" id="sidebar-progress">
+      <div class="sidebar-progress-label">
+        <span>Scenario 1 of 3</span>
+        <span id="sidebar-progress-pct">0%</span>
+      </div>
+      <div class="sidebar-progress-track">
+        <div class="sidebar-progress-fill" id="sidebar-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="scenario-panel visible" id="scenario-panel">
+      <div class="scenario-panel-label">Your Scenario</div>
+      <div class="scenario-panel-badge">
+        <span class="scenario-panel-badge-dot"></span>
+        <span>Academic Pressure</span>
+      </div>
+      <div class="scenario-panel-title">Imagine this is happening to you:</div>
+      <div class="scenario-panel-body">You have been preparing for an important exam or career milestone for months. Despite your efforts, you constantly worry about failing and feel guilty whenever you take a break. The thought of disappointing your family weighs heavily on you, and lately you have been sleeping poorly, losing patience with people around you, and withdrawing from friends.</div>
+      <div class="scenario-panel-hint">
+        <span class="scenario-panel-hint-icon">💡</span>
+        <span>Keep this scenario in mind as you interact with the AI. Try to imagine this situation is happening to you personally.</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">Mental Health Study &middot; Research Mode</div>
+  </aside>
+
+  <!-- ═══ MOBILE BANNER ═══ -->
+  <div class="mobile-banner" id="mobile-banner">
+    <div class="mobile-banner-header">
+      <div class="mobile-banner-logo">
+        <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.65-2.967 10.079 10.079 0 0 0-9.612 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 6.65 2.967 10.079 10.079 0 0 0 9.618-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l8.048 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.647-1.13zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943 4.33-2.501 4.332 2.5v4.999l-4.331 2.5-4.331-2.5V18z" fill="currentColor"/>
+      </svg>
+        ChatGPT
+      </div>
+      <button class="mobile-banner-toggle" id="mobile-toggle" onclick="toggleScenario()">
+        Scenario &#9660;
+      </button>
+    </div>
+    <div class="mobile-scenario-body" id="mobile-scenario-body">
+      <div class="mobile-scenario-text">You have been preparing for an important exam or career milestone for months. Despite your efforts, you constantly worry about failing and feel guilty whenever you take a break. The thought of disappointing your family weighs heavily on you, and lately you have been sleeping poorly, losing patience with people around you, and withdrawing from friends.</div>
+    </div>
+    <div class="mobile-progress">
+      <div class="mobile-progress-track">
+        <div class="mobile-progress-fill" id="mobile-progress-fill" style="width:0%"></div>
+      </div>
+      <span class="mobile-progress-pct" id="mobile-progress-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-model">GPT-4o <span>&#9662;</span></div>
+      <div class="scenario-badge">Academic Pressure</div>
+    </div>
+
+    <!-- Briefing overlay -->
+    <div class="briefing-overlay" id="briefing-overlay">
+      <div class="briefing-card">
+        <div class="briefing-eyebrow">
+          <span class="briefing-pill">Scenario 1 of 3</span>
+          <span class="briefing-step">Academic Pressure</span>
+        </div>
+        <div class="briefing-title">Please read the following scenario carefully</div>
+        <div class="briefing-divider"></div>
+        <div class="briefing-body">You have been preparing for an important exam or career milestone for months. Despite your efforts, you constantly worry about failing and feel guilty whenever you take a break. The thought of disappointing your family weighs heavily on you, and lately you have been sleeping poorly, losing patience with people around you, and withdrawing from friends.</div>
+        <div class="briefing-instruction">
+          <span class="briefing-instruction-icon">&#9432;</span>
+          <span>After reading, tap <strong>Begin Chat</strong> to start your interaction. The scenario will remain accessible via the banner above. Try to imagine this situation is happening to you personally.</span>
+        </div>
+        <button class="begin-btn" onclick="beginChat()">
+          Begin Chat
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chat-area">
+      <div class="chat-inner" id="chat-inner"></div>
+    </div>
+
+    <div class="input-bar-wrap">
+      <div class="input-bar">
+        <span class="input-bar-text">Choose an option above to continue&hellip;</span>
+        <span class="input-bar-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Viewport height fix for mobile browsers + iframes ─────────────────────
+   100vh is unreliable inside iframes and on mobile (browser chrome eats it).
+   We measure the actual available height once and set --app-h.          */
+function setVH() {
+  var h = window.innerHeight;
+  document.documentElement.style.setProperty('--app-h', h + 'px');
+}
+setVH();
+window.addEventListener('resize', setVH);
+
+/* ── Scenario data ──────────────────────────────────────────────────────── */
+var SCENARIO_ID    = 1;
+var SCENARIO_LABEL = 'Academic Pressure';
+var sc = {
+  empatheticReply_what: 'That sounds really exhausting — carrying all of that pressure for so long while also worrying about how others might feel if things don’t go perfectly. It makes complete sense that it would start affecting your sleep and your connections with people you care about. You’re clearly someone who cares deeply, and that in itself takes a lot of energy.\n\nI’m here with you. Would you like to explore this a little more?',
+  empatheticReply_help: 'Of course. First, I want you to know that what you’re describing — the guilt, the worry, the difficulty resting — is something many people experience when they’re under sustained pressure like this. It doesn’t mean you’re weak or failing. It means you’re human.\n\nTake a breath. I’m listening. What feels heaviest right now?',
+  output_A:             '**Option A — [INSERT TITLE]**\n\n[Insert your first advice response for Scenario 1 here. This could be a strategy, a reframe, a coping technique, etc.]',
+  output_B:             '**Option B — [INSERT TITLE]**\n\n[Insert your second advice response for Scenario 1 here. Offer an alternative approach or framing.]'
+};
+
+/* ── DOM refs ───────────────────────────────────────────────────────────── */
+var chatInner    = document.getElementById('chat-inner');
+var chatArea     = document.getElementById('chat-area');
+var overlay      = document.getElementById('briefing-overlay');
+var desktopFill  = document.getElementById('sidebar-progress-fill');
+var desktopPct   = document.getElementById('sidebar-progress-pct');
+var mobileFill   = document.getElementById('mobile-progress-fill');
+var mobilePct    = document.getElementById('mobile-progress-pct');
+
+var TOTAL_STEPS = 4;
+var step = 0;
+var scenarioBannerOpen = false;
+
+/* ── Mobile scenario toggle ─────────────────────────────────────────────── */
+function toggleScenario() {
+  var body   = document.getElementById('mobile-scenario-body');
+  var toggle = document.getElementById('mobile-toggle');
+  scenarioBannerOpen = !scenarioBannerOpen;
+  if (scenarioBannerOpen) {
+    body.classList.add('open');
+    toggle.innerHTML = 'Scenario &#9650;';
+  } else {
+    body.classList.remove('open');
+    toggle.innerHTML = 'Scenario &#9660;';
+  }
+  /* re-measure height after banner change */
+  setTimeout(setVH, 380);
+}
+
+/* ── Helpers ────────────────────────────────────────────────────────────── */
+function wait(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+function setProgress(s) {
+  var pct = Math.round((s / TOTAL_STEPS) * 100);
+  desktopFill.style.width = pct + '%';
+  desktopPct.textContent  = pct + '%';
+  mobileFill.style.width  = pct + '%';
+  mobilePct.textContent   = pct + '%';
+}
+
+function scrollBottom() {
+  setTimeout(function(){
+    chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+  }, 80);
+}
+
+function mdToHTML(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function addMsg(role, html) {
+  return new Promise(function(resolve){
+    var row = document.createElement('div');
+    row.className = 'msg-row ' + role;
+    if (role === 'assistant') {
+      var av = document.createElement('div');
+      av.className = 'msg-avatar'; av.textContent = 'G';
+      row.appendChild(av);
+    }
+    var bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.innerHTML = mdToHTML(html);
+    row.appendChild(bubble);
+    chatInner.appendChild(row);
+    scrollBottom();
+    resolve();
+  });
+}
+
+function addTyping() {
+  var row = document.createElement('div');
+  row.className = 'msg-row assistant'; row.id = 'typing-row';
+  var av = document.createElement('div');
+  av.className = 'msg-avatar'; av.textContent = 'G'; row.appendChild(av);
+  var bubble = document.createElement('div'); bubble.className = 'msg-bubble';
+  bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  row.appendChild(bubble); chatInner.appendChild(row); scrollBottom();
+}
+function removeTyping() { var t = document.getElementById('typing-row'); if (t) t.remove(); }
+
+function clearOptions() {
+  var a = document.getElementById('options-row');       if (a) a.remove();
+  var b = document.getElementById('output-choice-row'); if (b) b.remove();
+}
+
+function addOptions(opts) {
+  clearOptions();
+  var row = document.createElement('div');
+  row.className = 'options-row'; row.id = 'options-row';
+  opts.forEach(function(o){
+    var btn = document.createElement('button');
+    btn.className = 'opt-btn'; btn.textContent = o.label; btn.onclick = o.action;
+    row.appendChild(btn);
+  });
+  chatInner.appendChild(row); scrollBottom();
+}
+
+function addOutputChoice() {
+  clearOptions();
+  var wrap = document.createElement('div');
+  wrap.className = 'output-choice'; wrap.id = 'output-choice-row';
+  var lbl = document.createElement('div');
+  lbl.className = 'output-choice-label';
+  lbl.textContent = 'Which response do you prefer?'; wrap.appendChild(lbl);
+  [{key:'A', text:sc.output_A}, {key:'B', text:sc.output_B}].forEach(function(item){
+    var card = document.createElement('div'); card.className = 'output-card';
+    card.innerHTML = '<span class="card-tag">Response ' + item.key + '</span><div>' + mdToHTML(item.text) + '</div>';
+    card.onclick = function(){ chooseOutput(item.key); };
+    wrap.appendChild(card);
+  });
+  chatInner.appendChild(wrap); scrollBottom();
+}
+
+/* ── Flow ───────────────────────────────────────────────────────────────── */
+function beginChat() {
+  overlay.classList.add('hiding');
+  overlay.addEventListener('transitionend', function handler(){
+    overlay.classList.add('gone');
+    overlay.removeEventListener('transitionend', handler);
+    startChat();
+  });
+}
+
+function startChat() {
+  step = 0; setProgress(0);
+  addOptions([
+    { label: '\uD83D\uDCAC What should I do?', action: function(){ pickFirst('what'); } },
+    { label: '\uD83E\uDD1D Can you help me?',  action: function(){ pickFirst('help'); } }
+  ]);
+}
+
+async function pickFirst(choice) {
+  clearOptions(); step = 1; setProgress(1);
+  await addMsg('user', choice === 'what' ? 'What should I do?' : 'Can you help me?');
+  addTyping(); await wait(1800); removeTyping();
+  await addMsg('assistant', choice === 'what' ? sc.empatheticReply_what : sc.empatheticReply_help);
+  var secondLabel  = choice === 'what' ? '\uD83E\uDD1D Can you help me?' : '\uD83D\uDCAC What should I do?';
+  var secondChoice = choice === 'what' ? 'help' : 'what';
+  addOptions([{ label: secondLabel, action: function(){ pickSecond(secondChoice); } }]);
+}
+
+async function pickSecond(choice) {
+  clearOptions(); step = 2; setProgress(2);
+  await addMsg('user', choice === 'what' ? 'What should I do?' : 'Can you help me?');
+  addTyping(); await wait(1800); removeTyping();
+  await addMsg('assistant', choice === 'what' ? sc.empatheticReply_what : sc.empatheticReply_help);
+  step = 3; setProgress(3);
+  await wait(400);
+  await addMsg('assistant', 'I\u2019ve put together two possible approaches for you. Please select the one that feels most helpful or resonates with you:');
+  await wait(300);
+  addOutputChoice();
+}
+
+async function chooseOutput(key) {
+  clearOptions(); step = 4; setProgress(4);
+  var chosen = key === 'A' ? sc.output_A : sc.output_B;
+  await addMsg('user', 'I prefer Response ' + key + '.');
+  addTyping(); await wait(1400); removeTyping();
+  await addMsg('assistant', 'Thank you for sharing that. I\u2019m glad that resonated with you.\n\n' + chosen);
+  await wait(800);
+
+  /* ── postMessage to Qualtrics ──────────────────────────────────────── */
+  window.parent.postMessage({
+    type:          'simulation_complete',
+    scenarioId:    SCENARIO_ID,
+    scenarioLabel: SCENARIO_LABEL,
+    outputChoice:  key
+  }, '*');
+
+  /* ── Waiting screen ────────────────────────────────────────────────── */
+  await wait(400);
+  chatInner.innerHTML = '';
+  var ws = document.createElement('div');
+  ws.className = 'waiting-screen';
+  ws.innerHTML =
+    '<div class="check-icon">' +
+      '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10a37f"' +
+      ' stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<polyline points="20 6 9 17 4 12"/>' +
+      '</svg>' +
+    '</div>' +
+    '<h2>Scenario 1 complete</h2>' +
+    '<p>Your response has been recorded.</p>' +
+    '<p style="color:var(--text-muted);font-size:13px;">The survey will now continue automatically&hellip;</p>' +
+    '<div class="waiting-spinner"></div>';
+  chatInner.appendChild(ws);
+  scrollBottom();
+}
+
+/* ── Boot ───────────────────────────────────────────────────────────────── */
+overlay.classList.remove('hiding', 'gone');
+</script>
+</body>
+</html>
